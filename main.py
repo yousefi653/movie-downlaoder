@@ -53,12 +53,9 @@ def link_gen(soup):
             continue
         yield a
 
-def movie_gen(movies, filter):
+def movie_gen(movies):
     for movie in movies:
-        if movie["type"] == filter:
-            yield movie.values()
-        else:
-            continue
+        yield movie.values()
 
 def movies_links(movies):
     print(f"[ {get_time()} ] Getting movies info")
@@ -73,19 +70,22 @@ def movies_links(movies):
         "NoSub": [],
     }
 
-    names = movie_gen(movies, "movie")
+    movies_lenght = len(movies)
+    names = movie_gen(movies)
     name, imdb_code, title_type = next(names)
 
+    counter = 1
     for link in links:
         href = link.get("href")
 
-        if "series" in href.lower():
+        if re.match(r".*/series.*/.*", href):
             print(f"[ {get_time()} ] This is Series then pass")
             continue
 
-        if not (name in href):
+        if not (imdb_code in href) or movies_lenght == counter:
             try:
                 print(f"[ {get_time()} ] {name} movie append")
+                counter += 1
                 data.append(
                     {
                         "name": name,
@@ -103,8 +103,9 @@ def movies_links(movies):
                     "NoSub": [],
                 }
             except StopIteration:
-                # print(f"{'#'*5} We have data from all movie in site ;) {'#'*5}")
-                pass
+                print(f"[ {get_time()} ] We have data from all movie in site ;)")
+                print(f"[ {get_time()} ] Now we will have {counter-1} movie in DB")
+                break
 
         if any(item in href for item in ["SoftSub", "Soft.Sub", "Softub"]):
             movie["SoftSub"].append(
