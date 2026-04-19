@@ -145,7 +145,7 @@ def movies_info():
                 )
 
             if title_type:
-                if "series" in title_type.group().lower():
+                if any(item in title_type.group() for item in ["tvSeries", "tvMiniSeries"]):
                     movie = {}
                     continue
                 movie["type"] = title_type.group().split()[2].replace("\n", "").strip()
