@@ -18,7 +18,7 @@ def db_connection():
         db = client["movie_db"]
         return db
 
-def insert_movies_data(data):
+def insert_movies_data(data, count):
     db = db_connection()
     movie_col = db["movies"]
     movie_col.create_index("imdb_code", unique=True)
@@ -42,4 +42,6 @@ def insert_movies_data(data):
             )
         )
     movie_col.bulk_write(update_list)
+    if movie_col.count_documents != count:
+        print(f"[ {get_time()} ] Inserting data failed :(")
     print(f"[ {get_time()} ] movies data inserted")

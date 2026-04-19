@@ -123,7 +123,7 @@ def movies_links(movies):
     # with open("data.json", "w") as file:
     #     json.dump(data, file, indent=3)
     # insert_movies_data(data)
-    insert_movies_data(data=data)
+    insert_movies_data(data=data, count=counter-1)
 
 def movies_info():
     movies = []
