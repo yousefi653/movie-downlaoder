@@ -21,7 +21,7 @@ def db_connection():
 def insert_movies_data(data, count):
     db = db_connection()
     movie_col = db["movies"]
-    movie_col.create_index("imdb_code", unique=True)
+    movie_col.create_index([("imdb_code", 1), ("type", 1)], unique=True)
     update_list = []
 
     print(f"[ {get_time()} ] Start inserting movies data ....")
@@ -41,7 +41,43 @@ def insert_movies_data(data, count):
                 upsert=True,
             )
         )
-    movie_col.bulk_write(update_list)
-    if movie_col.count_documents != count:
+    movie_col.bulk_write(update_list, ordered=False)
+    if movie_col.count_documents({}) != count:
         print(f"[ {get_time()} ] Inserting data failed :(")
     print(f"[ {get_time()} ] movies data inserted")
+
+def insert_series_data(data):
+    db = db_connection()
+    serie_col = db["series"]
+    serie_col.create_index([("imdb_code", 1), ("type", 1)], unique=True)
+    update_list = []
+
+    print(f"[ {get_time()} ] Start inserting series data ....")
+    for item in data:
+        update_list.append(
+            UpdateOne(
+                {"imdb_code": item["imdb_code"]},
+                {
+                    "$set": {
+                        "name": item["name"],
+                        "type": item["type"],
+                        "SoftSub": item["SoftSub"],
+                        "NoSub": item["NoSub"],
+                        "Dubbed": item["Dubbed"]
+                    }
+                },
+                upsert=True,
+            )
+        )
+    serie_col.bulk_write(update_list, ordered=False)
+    print(f"[ {get_time()} ] series data inserted")
+
+def is_item_in_db(name):
+    db = db_connection()
+    col = db["series"]
+    if not name.startswith("tt"):
+        result = col.find({"name": name})
+    else:
+        result = col.find({"imdb_code": name})
+    if list(result):
+        return True
