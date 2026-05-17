@@ -1,5 +1,6 @@
 from pymongo import MongoClient, errors, UpdateOne
 import datetime
+import re
 
 
 def get_time():
@@ -81,3 +82,17 @@ def is_item_in_db(name):
         result = col.find({"imdb_code": name})
     if list(result):
         return True
+
+def find_movie_or_serie(name, type_name):
+    db = db_connection()
+    if type_name == "s":
+        col = db["series"]
+    else:
+        col = db["movies"]
+    
+    tmp = ""
+    for item in name.split():
+        tmp += f".*{item}.*"
+    tmp = tmp.replace(".*.*", ".*")
+    data = list(col.find({"name": {"$regex": tmp, "$options": "i"}}, {"name": 1, "_id": 0, "SoftSub": 1, "NoSub": 1, "Dubbed": 1}))
+    return data

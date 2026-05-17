@@ -135,8 +135,13 @@ def get_time():
 
 def similarity(name, name_in_link, imdb_code):
     if name_in_link.startswith("tt"):
-        return difflib.SequenceMatcher(None, imdb_code, name_in_link).ratio()
+        return 0
     else:
+        if name.startswith("The."):
+            name = name.replace("The.", "")
+        if name_in_link.startswith("The."):
+                    name_in_link = name_in_link.replace("The.", "")
+                
         return difflib.SequenceMatcher(None, name.lower(), name_in_link.lower()).ratio()
 
 def get_request(url=URL):
@@ -274,6 +279,10 @@ def movies_links(movies):
     insert_movies_data(data=data, count=counter-1)
 
 def series_links(series):
+    helper_data = [
+        "Sahsiyet",
+        "JoJo.no.Kimyou.na.Bouken",
+    ]
     remains_data = open("remains_data.json", "a+")
     if not "parsed_links.txt" in os.listdir():
         with open("parsed_links.txt", "w"):
@@ -317,13 +326,17 @@ def series_links(series):
             if is_item_in_db(name_in_link):
                 print("omad in to 2")
                 continue
-            movie_type = "Dubbed"
+            # movie_type = "Dubbed"
+            if "Dubbed" in href:
+                movie_type = "Dubbed"
+            else:
+                movie_type = "DVDRip"
 
-        if not re.match(r".*/720p.*", href) and not re.match(r".*/480p.*", href) and not re.match(r".*/1080p.*", href):
+        if not re.match(r".*/720p.*", href) and not re.match(r".*/480p.*", href) and not re.match(r".*/1080p.*", href) and not re.match(r".*/DVDRip.*", href) and not re.match(r".*/540p.*", href):
             continue
 
         sm = similarity(name, name_in_link, imdb_code)
-        is_current_serie = (imdb_code.lower() in href.lower())  or (sm >= 0.7) #or (name.lower() in href.lower())
+        is_current_serie = (imdb_code.lower() in href.lower()) or (sm >= 0.7) or name_in_link.startswith(name) or name_in_link.endswith(name)
 
         if not is_current_serie:
             try:
@@ -345,7 +358,9 @@ def series_links(series):
                     print(f"[ {get_time()} ] {name} serie append")
                     print(f"[ {get_time()} ] Unitl now {counter} series appended")
                     name, imdb_code, title_type = next(names)
-                    if len(data) % 10 == 0:
+                    if name_in_link in helper_data:
+                        name = name_in_link
+                    if len(data) % 5 == 0:
                         insert_series_data(data)
                         for item in serie_link_parsed:
                             parsed_links_file.write(f"{item}\n")
@@ -359,6 +374,8 @@ def series_links(series):
                 else:
                     print(f"[ {get_time()} ] **{name.upper()}** parsed before the pass")
                     name, imdb_code, title_type = next(names)
+                    if name_in_link in helper_data:
+                        name = name_in_link
                     serie_pass_flag = False
             except StopIteration:
                 print(f"[ {get_time()} ] We have data from all series in site ;)")
@@ -372,7 +389,7 @@ def series_links(series):
             # parsed_links_file.seek(0, 2)
             # parsed_links_file.write(f"{href}\n")
             serie_link_parsed.append(href)
-
+        print(href)
         ep_counter = 1
         season = re.findall(r"/S\d{1,2}/", href)[0].replace("/", "")
         quality = link.text.replace("\n", "").strip()
@@ -390,12 +407,16 @@ def series_links(series):
             continue
         if any("480" in key for key in seasons_link[movie_type][season].keys()):
             continue
+        if any("DVDRip" in key for key in seasons_link[movie_type][season].keys()):
+            continue
+        if any("540" in key for key in seasons_link[movie_type][season].keys()):
+            continue
         # if any("1080" in key for key in seasons_link[movie_type][season].keys()):
         #     continue
 
         print(f"LINK FOR SERIE *** {name} *** WITH IMDB_CODE ### {imdb_code} ### IS => {href}")
         sm = similarity(name, name_in_link, imdb_code)
-        if not (sm >= 0.7 or imdb_code in href):
+        if not (sm >= 0.7 or imdb_code in href or name_in_link.startswith(name) or name_in_link.endswith(name)):
             print("###\n BUG FOUNDED \n####")
             exit(1)
         if quality not in seasons_link[movie_type][season]:
