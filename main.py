@@ -130,6 +130,87 @@ def main():
                                         return 1
                                     return 0
                                 print(Fore.RED, f"Wrong index, must be in range[{0}, {len(data[selected][movie_type])}]", Fore.RESET)
+            else:
+                while True:
+                    no_data = None
+                    print(Style.BRIGHT, "What type you want? ", Style.RESET_ALL)
+                    for i, movie_type in enumerate(data[selected]):
+                        if not data[selected][movie_type]:
+                            print(Fore.LIGHTBLACK_EX, f"[{i}]: ", Style.RESET_ALL, movie_type)
+                            no_data = i
+                            continue
+                        print(Fore.GREEN, f"[{i}]: ", Style.RESET_ALL, movie_type)
+                    ### ask user to select one of these types
+                    while True:
+                        try:
+                            id = int(input("? "))
+                            if id == no_data:
+                                continue
+                        except ValueError:
+                            print(Fore.RED, "Wrong input, must be an integer", Fore.RESET)
+                            continue
+                        if id < len(data[selected]):
+                            break
+                        print(Fore.RED, f"Wrong index must be in range[{0}, {len(data[selected])-1}]", Fore.RESET)
+
+                    # ### show all movies of this type and ask user to select one of them
+                    for i, value in enumerate(data[selected]):
+                        if i == id:
+
+                            ### show all movies of this type and ask user to select one of them
+                            movie_type = value
+                            while True:
+                                print(Fore.BLUE, "Choise season: ")
+                                for i, s in enumerate(data[selected][movie_type]):
+                                    print(Fore.GREEN, f"[{i}] ==>", Fore.RESET, s)
+                                try:
+                                    season = int(input("? "))
+                                except ValueError:
+                                    print(Fore.RED, "Wrong input, must be an integer", Fore.RESET)
+                                    continue
+                                if id < len(data[selected]):
+                                    break
+                            season = list(data[selected][movie_type].keys())[season]
+                            while True:
+                                print(Fore.BLUE, Style.BRIGHT, "Choise what you want: ", Style.RESET_ALL)
+                                for i, item in enumerate(data[selected][movie_type][season]):
+                                    print(Fore.GREEN, f"[{i}]: ", Fore.RESET, item)
+                                try:
+                                    i = int(input("? "))
+                                except ValueError:
+                                    print(Fore.RED, "Wrong input, must be an integer", Fore.RESET)
+                                    continue
+
+                                if i < len(data[selected][movie_type][season]):
+                                    quality = list(data[selected][movie_type][season].keys())[i]
+                                    
+                                    while True:
+                                        print(Fore.BLUE, "Choise episode: ")
+                                        for i, episode in enumerate(data[selected][movie_type][season][quality]):
+                                            print(Fore.GREEN, f"[{i}] ==>", Fore.RESET, episode)
+                                        try:
+                                            i = int(input("?"))
+                                        except ValueError:
+                                            print(Fore.RED, "Wrong input, must be an integer", Fore.RESET)
+                                            continue
+                                        break
+                                    episode = list(data[selected][movie_type][season][quality].keys())[i]
+
+                                    print(f"Link: {data[selected][movie_type][season][quality][episode]["link"]}")
+                                    d = input("Do you want to download this?(y/n)")
+
+                                    if d.lower() == 'y':
+                                        name = data[selected][movie_type][season][quality][episode]["link"].split("/")[-1]                        
+                                        download_file(data[selected][movie_type][season][quality][episode]["link"], name)
+                                    else:
+                                        if input("Do you want to watch this online?(y/n)").lower().strip() == 'y':
+                                            watch_stream(data[selected][movie_type][season][quality][episode]["link"])
+                                    print(Fore.BLUE, "If you want to exit press q: ", Fore.RESET)
+                                    q = input('?')
+                                    if q.lower() == 'q':
+                                        return 1
+                                    return 0
+                                print(Fore.RED, f"Wrong index, must be in range[{0}, {len(data[selected][movie_type])}]", Fore.RESET)
 
 if __name__ == "__main__":
     while main() == 0:
