@@ -1,5 +1,6 @@
 import requests
 from bs4 import BeautifulSoup
+
 # from scrapper.utils import get_usr_agnts
 import pickle
 import datetime
@@ -21,8 +22,8 @@ TITLE_TYPE_PATT = re.compile(r"(?P<title_type>^Title Type:.*\n)")
 IMDB_CODE_PATT = re.compile(r"(?P<imdb_code>^IMDb Code:.*\n)")
 
 # --- Request URL ---
-# URL = "https://dls2.iran-gamecenter-host.com/DonyayeSerial/donyaye_serial_all_archive.html"
-URL = "https://dls2.iran-onemovies-dcenter.com/DonyayeSerial/donyaye_serial_all_archive.html"
+URL = "https://dls2.aparatchi-dlcenter.top/DonyayeSerial/donyaye_serial_all_archive.html"
+
 USER_AGENTS = simple_header.sua.get_list(shuffle=True, force_cached=True)
 USER_AGENTS2 = USER_AGENTS = [
     # Chrome Windows
@@ -36,7 +37,6 @@ USER_AGENTS2 = USER_AGENTS = [
     "Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.6367.202 Safari/537.36",
     "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.6367.82 Safari/537.36",
     "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.6367.60 Safari/537.36",
-
     # Chrome macOS
     "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.6367.202 Safari/537.36",
     "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123.0.6312.122 Safari/537.36",
@@ -44,13 +44,11 @@ USER_AGENTS2 = USER_AGENTS = [
     "Mozilla/5.0 (Macintosh; Intel Mac OS X 14_3_1) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123.0.6312.122 Safari/537.36",
     "Mozilla/5.0 (Macintosh; Intel Mac OS X 13_6_6) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.6367.202 Safari/537.36",
     "Mozilla/5.0 (Macintosh; Intel Mac OS X 12_7_4) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.6367.202 Safari/537.36",
-
     # Chrome Linux
     "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.6367.202 Safari/537.36",
     "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123.0.6312.122 Safari/537.36",
     "Mozilla/5.0 (X11; Ubuntu; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.6367.202 Safari/537.36",
     "Mozilla/5.0 (X11; Fedora; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.6367.202 Safari/537.36",
-
     # Firefox Windows
     "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:125.0) Gecko/20100101 Firefox/125.0",
     "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:124.0) Gecko/20100101 Firefox/124.0",
@@ -59,41 +57,34 @@ USER_AGENTS2 = USER_AGENTS = [
     "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:121.0) Gecko/20100101 Firefox/121.0",
     "Mozilla/5.0 (Windows NT 11.0; Win64; x64; rv:125.0) Gecko/20100101 Firefox/125.0",
     "Mozilla/5.0 (Windows NT 11.0; Win64; x64; rv:124.0) Gecko/20100101 Firefox/124.0",
-
     # Firefox macOS
     "Mozilla/5.0 (Macintosh; Intel Mac OS X 10.15; rv:125.0) Gecko/20100101 Firefox/125.0",
     "Mozilla/5.0 (Macintosh; Intel Mac OS X 10.15; rv:124.0) Gecko/20100101 Firefox/124.0",
     "Mozilla/5.0 (Macintosh; Intel Mac OS X 14.4; rv:125.0) Gecko/20100101 Firefox/125.0",
     "Mozilla/5.0 (Macintosh; Intel Mac OS X 13.6; rv:125.0) Gecko/20100101 Firefox/125.0",
-
     # Firefox Linux
     "Mozilla/5.0 (X11; Linux x86_64; rv:125.0) Gecko/20100101 Firefox/125.0",
     "Mozilla/5.0 (X11; Linux x86_64; rv:124.0) Gecko/20100101 Firefox/124.0",
     "Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:125.0) Gecko/20100101 Firefox/125.0",
     "Mozilla/5.0 (X11; Fedora; Linux x86_64; rv:125.0) Gecko/20100101 Firefox/125.0",
-
     # Safari macOS
     "Mozilla/5.0 (Macintosh; Intel Mac OS X 14_4_1) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.4.1 Safari/605.1.15",
     "Mozilla/5.0 (Macintosh; Intel Mac OS X 14_3_1) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.3.1 Safari/605.1.15",
     "Mozilla/5.0 (Macintosh; Intel Mac OS X 13_6_6) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.4.1 Safari/605.1.15",
     "Mozilla/5.0 (Macintosh; Intel Mac OS X 12_7_4) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.4.1 Safari/605.1.15",
     "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.4.1 Safari/605.1.15",
-
     # Edge Windows
     "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.6367.202 Safari/537.36 Edg/124.0.2478.97",
     "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123.0.6312.122 Safari/537.36 Edg/123.0.2420.97",
     "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.6261.112 Safari/537.36 Edg/122.0.2365.92",
     "Mozilla/5.0 (Windows NT 11.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.6367.202 Safari/537.36 Edg/124.0.2478.97",
-
     # Edge macOS
     "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.6367.202 Safari/537.36 Edg/124.0.2478.97",
     "Mozilla/5.0 (Macintosh; Intel Mac OS X 14_4_1) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.6367.202 Safari/537.36 Edg/124.0.2478.97",
-
     # Opera
     "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.6367.202 Safari/537.36 OPR/109.0.0.0",
     "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123.0.6312.122 Safari/537.36 OPR/108.0.0.0",
     "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.6367.202 Safari/537.36 OPR/109.0.0.0",
-
     # Chrome Android
     "Mozilla/5.0 (Linux; Android 14; Pixel 8 Pro) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.6367.82 Mobile Safari/537.36",
     "Mozilla/5.0 (Linux; Android 14; Pixel 8) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.6367.82 Mobile Safari/537.36",
@@ -105,33 +96,31 @@ USER_AGENTS2 = USER_AGENTS = [
     "Mozilla/5.0 (Linux; Android 14; OnePlus 12) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.6367.82 Mobile Safari/537.36",
     "Mozilla/5.0 (Linux; Android 13; Xiaomi 13 Pro) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.6367.82 Mobile Safari/537.36",
     "Mozilla/5.0 (Linux; Android 14; SM-A546B) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.6367.82 Mobile Safari/537.36",
-
     # Safari iOS
     "Mozilla/5.0 (iPhone; CPU iPhone OS 17_4_1 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.4.1 Mobile/15E148 Safari/604.1",
     "Mozilla/5.0 (iPhone; CPU iPhone OS 17_3_1 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.3.1 Mobile/15E148 Safari/604.1",
     "Mozilla/5.0 (iPhone; CPU iPhone OS 16_7_7 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/16.6 Mobile/15E148 Safari/604.1",
     "Mozilla/5.0 (iPad; CPU OS 17_4_1 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.4.1 Mobile/15E148 Safari/604.1",
     "Mozilla/5.0 (iPad; CPU OS 16_7_7 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/16.6 Mobile/15E148 Safari/604.1",
-
     # Firefox Android
     "Mozilla/5.0 (Android 14; Mobile; rv:125.0) Gecko/125.0 Firefox/125.0",
     "Mozilla/5.0 (Android 13; Mobile; rv:124.0) Gecko/124.0 Firefox/124.0",
     "Mozilla/5.0 (Android 14; Tablet; rv:125.0) Gecko/125.0 Firefox/125.0",
-
     # Samsung Browser
     "Mozilla/5.0 (Linux; Android 14; SM-S928B) AppleWebKit/537.36 (KHTML, like Gecko) SamsungBrowser/24.0 Chrome/117.0.0.0 Mobile Safari/537.36",
     "Mozilla/5.0 (Linux; Android 14; SM-S918B) AppleWebKit/537.36 (KHTML, like Gecko) SamsungBrowser/24.0 Chrome/117.0.0.0 Mobile Safari/537.36",
     "Mozilla/5.0 (Linux; Android 13; SM-G991B) AppleWebKit/537.36 (KHTML, like Gecko) SamsungBrowser/23.0 Chrome/115.0.0.0 Mobile Safari/537.36",
-
     # Brave (همون Chrome engine)
     "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.6367.202 Safari/537.36 Brave/1.65",
     "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.6367.202 Safari/537.36 Brave/1.65",
     "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.6367.202 Safari/537.36 Brave/1.65",
 ]
 
+
 def get_time():
     now = datetime.datetime.now().time()
     return datetime.time.strftime(now, "%H:%M:%S")
+
 
 def similarity(name, name_in_link, imdb_code):
     if name_in_link.startswith("tt"):
@@ -140,22 +129,27 @@ def similarity(name, name_in_link, imdb_code):
         if name.startswith("The."):
             name = name.replace("The.", "")
         if name_in_link.startswith("The."):
-                    name_in_link = name_in_link.replace("The.", "")
-                
+            name_in_link = name_in_link.replace("The.", "")
+
         return difflib.SequenceMatcher(None, name.lower(), name_in_link.lower()).ratio()
+
 
 def get_request(url=URL):
     # ua = simple_header.sua.get_list(force_cached=True)[0]
     # headers = simple_header.get_dict(url=url, user_agent=random.choice(USER_AGENTS))
     try:
-        headers = simple_header.get_dict(url=url, user_agent=random.choice(USER_AGENTS2))
+        headers = simple_header.get_dict(
+            url=url, user_agent=random.choice(USER_AGENTS2)
+        )
     except:
         headers = simple_header.get_dict(url=url, user_agent=random.choice(USER_AGENTS))
 
     try:
         # time.sleep(random.randint(3, 10))
         if "dls8" not in url:
-            response = requests.get(url=url, headers=headers, timeout=45, allow_redirects=True, verify=False)
+            response = requests.get(
+                url=url, headers=headers, timeout=45, allow_redirects=True, verify=False
+            )
         else:
             response = requests.get(url=url)
     except requests.ConnectionError as Error:
@@ -173,6 +167,7 @@ def get_request(url=URL):
 
     return response
 
+
 def creation_soup():
     print(f"[ {get_time()} ] Starting program")
     print(f"[ {get_time()} ] Get request to the site")
@@ -182,6 +177,7 @@ def creation_soup():
     print(f"[ {get_time()} ] Parsing response ......")
     soup = BeautifulSoup(response.text, "html.parser")
     return soup
+
 
 def writing_html_code_in_file():
     soup = creation_soup()
@@ -195,20 +191,23 @@ def writing_html_code_in_file():
     pickle.dump({"last_modified": today}, file=pickl_file)
     pickl_file.close()
 
+
 def link_gen(soup):
     bad_links = [
-        "http://dls6.iran-onemovies-dcenter.com/DonyayeSerial/10_thous.html",
-        "http://dls6.iran-gamecenter-host.com/DonyayeSerial/10_thous.html",
+        "http://dls6.aparatchi-dlcenter.top/DonyayeSerial/10_thous.html",
         "https://daramet.com/donyayeserial",
     ]
     for a in soup.find_all("a"):
         if any(a.get("href") == item for item in bad_links):
             continue
+
         yield a
+
 
 def movie_gen(movies):
     for movie in movies:
         yield movie.values()
+
 
 def movies_links(movies):
     print(f"[ {get_time()} ] Getting movies info")
@@ -235,7 +234,7 @@ def movies_links(movies):
             print(f"[ {get_time()} ] This is Series then pass")
             continue
 
-        if not (imdb_code in href) or movies_lenght == counter:
+        if imdb_code not in href or movies_lenght == counter:
             try:
                 print(f"[ {get_time()} ] {name} movie append")
                 counter += 1
@@ -257,7 +256,7 @@ def movies_links(movies):
                 }
             except StopIteration:
                 print(f"[ {get_time()} ] We have data from all movie in site ;)")
-                print(f"[ {get_time()} ] Now we will have {counter-1} movie in DB")
+                print(f"[ {get_time()} ] Now we will have {counter - 1} movie in DB")
                 break
 
         if any(item in href for item in ["SoftSub", "Soft.Sub", "Softub"]):
@@ -276,15 +275,25 @@ def movies_links(movies):
     # with open("data.json", "w") as file:
     #     json.dump(data, file, indent=3)
     # insert_movies_data(data)
-    insert_movies_data(data=data, count=counter-1)
+    insert_movies_data(data=data, count=counter - 1)
+
 
 def series_links(series):
     helper_data = [
         "Sahsiyet",
         "JoJo.no.Kimyou.na.Bouken",
+        "3.Percent",
+        "Vis.A.Vis",
+        "Kalifat",
+        "Suburra",
+        "Moon.Lovers",
+        "Strangers.From.Hell",
+        "Hwarang",
+        "Marvels.M.O.D.O.K",
+        "The.PenthouseDiablero",
     ]
     remains_data = open("remains_data.json", "a+")
-    if not "parsed_links.txt" in os.listdir():
+    if "parsed_links.txt" not in os.listdir():
         with open("parsed_links.txt", "w"):
             pass
     parsed_links_file = open("parsed_links.txt", "a+", encoding="UTF-8")
@@ -300,11 +309,12 @@ def series_links(series):
     seasons_link = {}
     counter = 1
     movie_type = None
-    
+
     parsed_links_file.seek(0)
     parsed_links = parsed_links_file.readlines()
     serie_link_parsed = []
     serie_pass_flag = False
+
     for link in links:
         href = link.get("href")
         name_in_link = href.split("/")[5]
@@ -326,25 +336,43 @@ def series_links(series):
             if is_item_in_db(name_in_link):
                 print("omad in to 2")
                 continue
-            # movie_type = "Dubbed"
+
             if "Dubbed" in href:
                 movie_type = "Dubbed"
             else:
                 movie_type = "DVDRip"
 
-        if not re.match(r".*/720p.*", href) and not re.match(r".*/480p.*", href) and not re.match(r".*/1080p.*", href) and not re.match(r".*/DVDRip.*", href) and not re.match(r".*/540p.*", href):
+        if (
+            not re.match(r".*/720p.*", href)
+            and not re.match(r".*/480p.*", href)
+            and not re.match(r".*/1080p.*", href)
+            and not re.match(r".*/DVDRip.*", href)
+            and not re.match(r".*/540p.*", href)
+            and not re.match(r".*/HDTV.*", href)
+            and not re.match(r".*/x265.10bit.BluRay.*", href)
+            and not re.match(r".*/Web-DL$", href)
+        ):
             continue
 
         sm = similarity(name, name_in_link, imdb_code)
-        is_current_serie = (imdb_code.lower() in href.lower()) or (sm >= 0.7) or name_in_link.startswith(name) or name_in_link.endswith(name)
+        is_current_serie = (
+            (imdb_code.lower() in href.lower())
+            or (sm >= 0.7)
+            or name_in_link.startswith(name)
+            or name_in_link.endswith(name)
+        )
 
         if not is_current_serie:
             try:
                 if not serie_pass_flag:
                     if "SoftSub" in seasons_link:
-                        print(f"[ {get_time()} ] seasons(SoftSub) is {", ".join(list(seasons_link["SoftSub"].keys()))}")
+                        print(
+                            f"[ {get_time()} ] seasons(SoftSub) is {', '.join(list(seasons_link['SoftSub'].keys()))}"
+                        )
                     if "NoSub" in seasons_link:
-                        print(f"[ {get_time()} ] seasons(NoSub) is {", ".join(list(seasons_link["NoSub"].keys()))}")
+                        print(
+                            f"[ {get_time()} ] seasons(NoSub) is {', '.join(list(seasons_link['NoSub'].keys()))}"
+                        )
                     data.append(
                         {
                             "name": name,
@@ -352,7 +380,7 @@ def series_links(series):
                             "imdb_code": imdb_code,
                             "SoftSub": seasons_link.get("SoftSub"),
                             "NoSub": seasons_link.get("NoSub"),
-                            "Dubbed": seasons_link.get("Dubbed")
+                            "Dubbed": seasons_link.get("Dubbed"),
                         }
                     )
                     print(f"[ {get_time()} ] {name} serie append")
@@ -379,8 +407,11 @@ def series_links(series):
                     serie_pass_flag = False
             except StopIteration:
                 print(f"[ {get_time()} ] We have data from all series in site ;)")
-                print(f"[ {get_time()} ] Now we will have {counter-1} serie in DB")
+                print(f"[ {get_time()} ] Now we will have {counter - 1} serie in DB")
                 break
+
+        if name == "Joseph":
+            name, imdb_code, title_type = next(names)
 
         if f"{href}\n" in parsed_links:
             serie_pass_flag = True
@@ -411,20 +442,36 @@ def series_links(series):
             continue
         if any("540" in key for key in seasons_link[movie_type][season].keys()):
             continue
+        if any("HDTV" in key for key in seasons_link[movie_type][season].keys()):
+            continue
+        if any(
+            "x265.10bit.BluRay" == key
+            for key in seasons_link[movie_type][season].keys()
+        ):
+            continue
+        if any("Web-DL" == key for key in seasons_link[movie_type][season].keys()):
+            continue
         # if any("1080" in key for key in seasons_link[movie_type][season].keys()):
         #     continue
 
-        print(f"LINK FOR SERIE *** {name} *** WITH IMDB_CODE ### {imdb_code} ### IS => {href}")
+        print(
+            f"LINK FOR SERIE *** {name} *** WITH IMDB_CODE ### {imdb_code} ### IS => {href}"
+        )
         sm = similarity(name, name_in_link, imdb_code)
-        if not (sm >= 0.7 or imdb_code in href or name_in_link.startswith(name) or name_in_link.endswith(name)):
+        if not (
+            sm >= 0.7
+            or imdb_code in href
+            or name_in_link.startswith(name)
+            or name_in_link.endswith(name)
+        ):
             print("###\n BUG FOUNDED \n####")
             exit(1)
         if quality not in seasons_link[movie_type][season]:
             seasons_link[movie_type][season][quality] = {}
 
         count = 0
-        while(count <= 5):
-            print(f"[ {get_time()} ] Attempt {count+1} for {season}")
+        while count <= 5:
+            print(f"[ {get_time()} ] Attempt {count + 1} for {season}")
             response = get_request(url=href)
             print(f"[ {get_time()} ] Response code is: {response}")
             if not response:
@@ -436,9 +483,20 @@ def series_links(series):
                 continue
             break
         if not response:
-            json.dump({"name": name, "imdb_code": imdb_code, "season": season, "quality": quality, "link": href}, remains_data)
+            json.dump(
+                {
+                    "name": name,
+                    "imdb_code": imdb_code,
+                    "season": season,
+                    "quality": quality,
+                    "link": href,
+                },
+                remains_data,
+            )
             continue
-        print(f"[ {get_time()} ] Response received successfuly from site for {season} of {name}")
+        print(
+            f"[ {get_time()} ] Response received successfuly from site for {season} of {name}"
+        )
 
         season_soup = BeautifulSoup(response.text, "html.parser")
         for item in season_soup.find_all("td", attrs={"class": "n"})[1:]:
@@ -447,24 +505,30 @@ def series_links(series):
             episode = re.findall(r"E\d{1,2}", episode_link)
             if episode:
                 episode = episode[0]
-                seasons_link[movie_type][season][quality][episode] = {"link": f"{href}/{episode_link}", "size": season_soup.find_all("td", attrs={"class": "s"})[ep_counter].text.replace("\n", "")}
+                seasons_link[movie_type][season][quality][episode] = {
+                    "link": f"{href}/{episode_link}",
+                    "size": season_soup.find_all("td", attrs={"class": "s"})[
+                        ep_counter
+                    ].text.replace("\n", ""),
+                }
                 ep_counter += 1
     with open("moviesssss.pkl", "wb") as file:
         pickle.dump(data, file)
     insert_series_data(data=data)
+
 
 def movies_info():
     movies = []
     movie = {}
     with open("html_code.txt", "r", encoding="UTF-8") as file:
         for line in file:
-            name = re.match(NAME_PATT, line)
-            imdb_code = re.match(IMDB_CODE_PATT, line)
-            title_type = re.match(TITLE_TYPE_PATT, line)
+            name = NAME_PATT.match(line)
+            imdb_code = IMDB_CODE_PATT.match(line)
+            title_type = TITLE_TYPE_PATT.match(line)
 
             if name:
                 name = name.group().split()[1:]
-                name = ".".join(name)
+                name = ".".join(name).replace(".start_year", "")
                 movie["name"] = name
 
             if imdb_code:
@@ -473,13 +537,15 @@ def movies_info():
                 )
 
             if title_type:
-                if any(item in title_type.group() for item in ["tvSeries", "tvMiniSeries"]):
+                type_val = title_type.group().split()[2].replace("\n", "").strip()
+                if type_val != "movie":
                     movie = {}
                     continue
-                movie["type"] = title_type.group().split()[2].replace("\n", "").strip()
+                movie["type"] = type_val
                 movies.append(movie)
                 movie = {}
     movies_links(movies=movies)
+
 
 def series_info():
     series = []
@@ -492,7 +558,13 @@ def series_info():
 
             if name:
                 name = name.group().split()[1:]
-                name = ".".join(name).replace("..", ".").replace(":", "").replace("-", ".").replace("'", "")
+                name = (
+                    ".".join(name)
+                    .replace("..", ".")
+                    .replace(":", "")
+                    .replace("-", ".")
+                    .replace("'", "")
+                )
                 serie["name"] = name
 
             if imdb_code:
@@ -501,16 +573,21 @@ def series_info():
                 )
 
             if title_type:
-                if any(item in title_type.group() for item in ["tvSeries", "tvMiniSeries"]):
-                    serie["type"] = title_type.group().split()[2].replace("\n", "").strip()
+                if "series" in title_type.group():
+                    serie["type"] = (
+                        title_type.group().split()[2].replace("\n", "").strip()
+                    )
                     series.append(serie)
                 serie = {}
                 continue
+
+    # print(series)
     series_links(series=series)
+
 
 # main program
 
-if not "info" in os.listdir():
+if "info" not in os.listdir():
     writing_html_code_in_file()
 
 file = open("info", "rb")
@@ -520,10 +597,12 @@ file.close()
 if (today - last_modified).days > 1:
     writing_html_code_in_file()
 
-print(f"\n#### MOVIE STEP START ####\n")
+print("\n#### MOVIE STEP START ####\n")
 movies_info()
-print(f"\n#### MOVIE STEP END ####\n")
-print(f"\n#### SERIE STEP START ####\n")
+print("\n#### MOVIE STEP END ####\n")
+
+
+print("\n#### SERIE STEP START ####\n")
 series_info()
-print(f"\n#### SERIE STEP END ####\n")
+print("\n#### SERIE STEP END ####\n")
 print(f"[ {get_time()} ] Done :)")

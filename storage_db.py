@@ -1,11 +1,11 @@
 from pymongo import MongoClient, errors, UpdateOne
 import datetime
-import re
 
 
 def get_time():
     now = datetime.datetime.now().time()
     return datetime.time.strftime(now, "%H:%M:%S")
+
 
 def db_connection():
     try:
@@ -18,6 +18,7 @@ def db_connection():
     else:
         db = client["movie_db"]
         return db
+
 
 def insert_movies_data(data, count):
     db = db_connection()
@@ -47,6 +48,7 @@ def insert_movies_data(data, count):
         print(f"[ {get_time()} ] Inserting data failed :(")
     print(f"[ {get_time()} ] movies data inserted")
 
+
 def insert_series_data(data):
     db = db_connection()
     serie_col = db["series"]
@@ -64,7 +66,7 @@ def insert_series_data(data):
                         "type": item["type"],
                         "SoftSub": item["SoftSub"],
                         "NoSub": item["NoSub"],
-                        "Dubbed": item["Dubbed"]
+                        "Dubbed": item["Dubbed"],
                     }
                 },
                 upsert=True,
@@ -72,6 +74,7 @@ def insert_series_data(data):
         )
     serie_col.bulk_write(update_list, ordered=False)
     print(f"[ {get_time()} ] series data inserted")
+
 
 def is_item_in_db(name):
     db = db_connection()
@@ -83,16 +86,22 @@ def is_item_in_db(name):
     if list(result):
         return True
 
+
 def find_movie_or_serie(name, type_name):
     db = db_connection()
     if type_name == "s":
         col = db["series"]
     else:
         col = db["movies"]
-    
+
     tmp = ""
     for item in name.split():
         tmp += f".*{item}.*"
     tmp = tmp.replace(".*.*", ".*")
-    data = list(col.find({"name": {"$regex": tmp, "$options": "i"}}, {"name": 1, "_id": 0, "SoftSub": 1, "NoSub": 1, "Dubbed": 1}))
+    data = list(
+        col.find(
+            {"name": {"$regex": tmp, "$options": "i"}},
+            {"name": 1, "_id": 0, "SoftSub": 1, "NoSub": 1, "Dubbed": 1},
+        )
+    )
     return data
