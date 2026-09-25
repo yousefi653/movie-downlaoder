@@ -1,6 +1,7 @@
 import datetime
 import difflib
 import json
+import logging
 import os
 import pickle
 import random
@@ -12,7 +13,11 @@ import simple_header
 import urllib3
 from bs4 import BeautifulSoup
 
+from logger_config import setup_logging
 from storage_db import insert_movies_data, insert_series_data, is_item_in_db
+
+setup_logging()
+logger = logging.getLogger(__name__)
 
 urllib3.disable_warnings()
 
@@ -112,16 +117,11 @@ USER_AGENTS2 = USER_AGENTS = [
     "Mozilla/5.0 (Linux; Android 14; SM-S928B) AppleWebKit/537.36 (KHTML, like Gecko) SamsungBrowser/24.0 Chrome/117.0.0.0 Mobile Safari/537.36",
     "Mozilla/5.0 (Linux; Android 14; SM-S918B) AppleWebKit/537.36 (KHTML, like Gecko) SamsungBrowser/24.0 Chrome/117.0.0.0 Mobile Safari/537.36",
     "Mozilla/5.0 (Linux; Android 13; SM-G991B) AppleWebKit/537.36 (KHTML, like Gecko) SamsungBrowser/23.0 Chrome/115.0.0.0 Mobile Safari/537.36",
-    # Brave (همون Chrome engine)
+    # Brave (Chrome engine)
     "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.6367.202 Safari/537.36 Brave/1.65",
     "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.6367.202 Safari/537.36 Brave/1.65",
     "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.6367.202 Safari/537.36 Brave/1.65",
 ]
-
-
-def get_time():
-    now = datetime.datetime.now().time()
-    return datetime.time.strftime(now, "%H:%M:%S")
 
 
 def similarity(name, name_in_link, imdb_code):
@@ -154,37 +154,42 @@ def get_request(url=URL):
             )
         else:
             response = requests.get(url=url, timeout=45, verify=False)
-    except requests.ConnectionError as Error:
-        print(f"[ {get_time()} ] Error: {str(Error)}")
+    except requests.ConnectionError as exc:
+        logger.warning("Connection error for url=%s: %s", url, exc)
         return None
-    except requests.Timeout as Error:
-        print(f"[ {get_time()} ] Error: {str(Error)}")
+    except requests.Timeout as exc:
+        logger.warning("Timeout after 45s for url=%s: %s", url, exc)
         return None
-    except OSError as Error:
-        print(f"[ {get_time()} ] Error: {str(Error)}")
+    except OSError as exc:
+        logger.warning("OS/network error for url=%s: %s", url, exc)
         return None
-    except Exception as Error:
-        print(f"[ {get_time()} ] Error: {str(Error)}")
+    except Exception as exc:
+        logger.warning("Unexpected request error for url=%s: %r", url, exc)
         return None
 
-    # NEW: treat non-200 as failure instead of parsing 404 pages as valid
     try:
         if response.status_code != 200:
-            print(f"[ {get_time()} ] Bad status {response.status_code} for {url}")
+            logger.warning(
+                "Bad HTTP status=%s for url=%s", response.status_code, url
+            )
             return None
-    except Exception:
+    except Exception as exc:
+        logger.warning("Could not read status code for url=%s: %r", url, exc)
         return None
 
+    logger.debug("GET %s -> 200 (%s bytes)", url, len(response.content))
     return response
 
 
 def creation_soup():
-    print(f"[ {get_time()} ] Starting program")
-    print(f"[ {get_time()} ] Get request to the site")
+    logger.info("Starting archive fetch")
+    logger.info("Sending GET request to archive url=%s", URL)
     response = get_request()
-    if response.status_code == 200:
-        print(f"[ {get_time()} ] Response was successfuly received")
-    print(f"[ {get_time()} ] Parsing response ......")
+    if response is None:
+        logger.error("Archive request failed (no response); aborting")
+        raise RuntimeError("Archive request failed: no response (see logs/app.log)")
+    logger.info("Archive response received (status=200)")
+    logger.debug("Parsing archive response ......")
     soup = BeautifulSoup(response.text, "html.parser")
     return soup
 
@@ -192,14 +197,18 @@ def creation_soup():
 def writing_html_code_in_file():
     soup = creation_soup()
     with open("html_code_with_a.txt", "w", encoding="UTF-8") as file:
-        print(f"[ {get_time()} ] Writing the html code in file")
-        file.write(str(soup.prettify()))
+        logger.info("Writing prettified HTML to html_code_with_a.txt")
+        content = str(soup.prettify())
+        file.write(content)
+    logger.debug("html_code_with_a.txt written (%d chars)", len(content))
     with open("html_code.txt", "w", encoding="UTF-8") as file:
-        file.write(str(soup.text))
+        text = str(soup.text)
+        file.write(text)
+    logger.debug("html_code.txt written (%d chars)", len(text))
     today = datetime.date.today()
-    pickl_file = open("info", "wb")
-    pickle.dump({"last_modified": today}, file=pickl_file)
-    pickl_file.close()
+    with open("info", "wb") as pickl_file:
+        pickle.dump({"last_modified": today}, file=pickl_file)
+    logger.info("Archive cache refreshed (last_modified=%s)", today)
 
 
 def link_gen(soup):
@@ -374,19 +383,29 @@ def fetch_season_episodes(season_url, max_retries=5):
     response = None
     count = 0
     while count < max_retries:
-        print(f"[ {get_time()} ] Attempt {count + 1} for {season_url}")
+        logger.debug("Fetch attempt %d/%d for season_url=%s", count + 1, max_retries, season_url)
         response = get_request(url=season_url)
         if response is not None:
             break
-        print(f"[ {get_time()} ] Failed, retry in 10s ...")
+        logger.warning(
+            "Season fetch failed (attempt %d/%d) for season_url=%s; retrying in 10s",
+            count + 1,
+            max_retries,
+            season_url,
+        )
         count += 1
         time.sleep(10)
     if response is None:
+        logger.error(
+            "Season fetch gave up after %d attempts for season_url=%s",
+            max_retries,
+            season_url,
+        )
         return None
     try:
         season_soup = BeautifulSoup(response.text, "html.parser")
-    except Exception as Error:
-        print(f"[ {get_time()} ] Soup parse error: {Error}")
+    except Exception as exc:
+        logger.error("HTML parse failed for season_url=%s: %r", season_url, exc)
         return None
 
     episodes = {}
@@ -423,12 +442,9 @@ def fetch_season_episodes(season_url, max_retries=5):
                     continue
             em = EPISODE_RE.search(filename)
             if not em:
+                logger.debug("Skipping file without episode number: %s", filename)
                 continue
-            ep_code = (
-                f"E{em.group(1).zfill(2).upper()}"
-                if False
-                else "E" + em.group(1).zfill(2)
-            )
+    
             digits = em.group(1)
             ep_code = f"E{digits.zfill(2) if len(digits) <= 2 else digits}"
             size = td_s.get_text(" ", strip=True).replace("\n", "") if td_s else ""
@@ -439,6 +455,17 @@ def fetch_season_episodes(season_url, max_retries=5):
                 full_link = season_url.rstrip("/") + "/" + rel.lstrip("/")
             if ep_code not in episodes:
                 episodes[ep_code] = {"link": full_link, "size": size}
+            else:
+                logger.debug(
+                    "Duplicate episode %s in season_url=%s; keeping first link",
+                    ep_code,
+                    season_url,
+                )
+        logger.info(
+            "Parsed %d episodes from season_url=%s (rows mode)",
+            len(episodes),
+            season_url,
+        )
         return episodes
 
     td_ns = season_soup.find_all("td", attrs={"class": "n"})
@@ -467,33 +494,50 @@ def fetch_season_episodes(season_url, max_retries=5):
             )
             if ep_code not in episodes:
                 episodes[ep_code] = {"link": full_link, "size": size}
-        except Exception:
+        except Exception as exc:
+            logger.debug("Skipping unparseable directory row idx=%d: %r", idx, exc)
             continue
+    if not episodes:
+        logger.warning("No episodes parsed from season_url=%s", season_url)
+    else:
+        logger.info(
+            "Parsed %d episodes from season_url=%s (fallback mode)",
+            len(episodes),
+            season_url,
+        )
     return episodes
 
 
 def load_parsed_set(path="parsed_links.txt"):
     if not os.path.exists(path):
+        logger.info("parsed_links file not found; creating empty %s", path)
         open(path, "w", encoding="UTF-8").close()
         return set()
     with open(path, "r", encoding="UTF-8") as f:
-        return {line.strip() for line in f if line.strip()}
+        items = {line.strip() for line in f if line.strip()}
+    logger.debug("Loaded %d already-parsed links from %s", len(items), path)
+    return items
 
 
 def append_parsed_links(path, links):
     if not links:
         return
-    with open(path, "a", encoding="UTF-8") as f:
-        for h in links:
-            f.write(f"{h}\n")
+    try:
+        with open(path, "a", encoding="UTF-8") as f:
+            for h in links:
+                f.write(f"{h}\n")
+        logger.debug("Appended %d parsed links to %s", len(links), path)
+    except OSError as exc:
+        logger.error("Failed to append %d links to %s: %s", len(links), path, exc)
 
 
 def log_remain(path, obj):
     try:
         with open(path, "a", encoding="UTF-8") as f:
             f.write(json.dumps(obj, ensure_ascii=False) + "\n")
-    except Exception as Error:
-        print(f"[ {get_time()} ] remain log error: {Error}")
+        logger.debug("Logged failed item to %s: %s", path, obj)
+    except Exception as exc:
+        logger.error("Failed to write remain entry to %s (%r): %r", path, obj, exc)
 
 
 def movie_gen(movies):
@@ -502,13 +546,17 @@ def movie_gen(movies):
 
 
 def movies_links(movies=None, blocks=None):
-    print(f"[ {get_time()} ] Getting movies info (block-based)")
+    logger.info("Parsing movies (block-based)")
     if blocks is None:
-        with open("html_code_with_a.txt", "r", encoding="UTF-8") as f:
-            soup = BeautifulSoup(f.read(), "html.parser")
+        try:
+            with open("html_code_with_a.txt", "r", encoding="UTF-8") as f:
+                soup = BeautifulSoup(f.read(), "html.parser")
+        except OSError as exc:
+            logger.error("Cannot read html_code_with_a.txt for movies: %s", exc)
+            return
         blocks = parse_archive_blocks(soup)
     movie_blocks = [b for b in blocks if b["type"] == "movie"]
-    print(f"[ {get_time()} ] Found {len(movie_blocks)} movie blocks")
+    logger.info("Found %d movie blocks", len(movie_blocks))
     data = []
     for b in movie_blocks:
         name = b["name"]
@@ -517,6 +565,12 @@ def movies_links(movies=None, blocks=None):
         movie = {"SoftSub": [], "Dubbed": [], "NoSub": []}
         for href, quality_text, header in b["links"]:
             if re.match(r".*/series.*/.*", href):
+                logger.debug(
+                    "Skipping series folder inside movie block name=%s imdb=%s href=%s",
+                    name,
+                    imdb_code,
+                    href,
+                )
                 continue
             title = quality_text
             if "SoftSub" in href or "Soft.Sub" in href or "Softub" in href:
@@ -528,7 +582,15 @@ def movies_links(movies=None, blocks=None):
             else:
                 movie["NoSub"].append({"title": title, "link": href})
         if not b["links"]:
-            for emb in parse_embedded_file_links(b.get("block_text", "")):
+            embedded = parse_embedded_file_links(b.get("block_text", ""))
+            if embedded:
+                logger.debug(
+                    "Movie block name=%s imdb=%s has no <a> links; using %d embedded file(s)",
+                    name,
+                    imdb_code,
+                    len(embedded),
+                )
+            for emb in embedded:
                 ver = emb["version"]
                 key = ver if ver in movie else "NoSub"
                 movie[key].append({"title": emb["quality"], "link": emb["file"]})
@@ -542,26 +604,32 @@ def movies_links(movies=None, blocks=None):
                 "NoSub": movie["NoSub"],
             }
         )
-    print(f"[ {get_time()} ] Parsed {len(data)} movies, inserting ...")
+    logger.info("Parsed %d movies, inserting ...", len(data))
     if data:
         insert_movies_data(data=data, count=len(data))
     else:
-        print(f"[ {get_time()} ] No movie data to insert")
+        logger.warning("No movie data parsed; nothing to insert")
 
 
 def series_links(series=None, blocks=None, fetch_episodes=True, sleep_seconds=5):
     parsed_set = load_parsed_set("parsed_links.txt")
-    print(f"[ {get_time()} ] Getting series info (block-based)")
+    logger.info("Parsing series (block-based)")
     if blocks is None:
-        with open("html_code_with_a.txt", "r", encoding="UTF-8") as f:
-            soup = BeautifulSoup(f.read(), "html.parser")
+        try:
+            with open("html_code_with_a.txt", "r", encoding="UTF-8") as f:
+                soup = BeautifulSoup(f.read(), "html.parser")
+        except OSError as exc:
+            logger.error("Cannot read html_code_with_a.txt for series: %s", exc)
+            return
         blocks = parse_archive_blocks(soup)
     serie_blocks = [b for b in blocks if b["type"] == "series"]
-    print(f"[ {get_time()} ] Found {len(serie_blocks)} serie blocks")
+    logger.info("Found %d serie blocks", len(serie_blocks))
 
     data = []
     newly_parsed = []
     counter = 0
+    skipped_cached = 0
+    failed_blocks = 0
 
     for b in serie_blocks:
         name = b["name"]
@@ -574,10 +642,18 @@ def series_links(series=None, blocks=None, fetch_episodes=True, sleep_seconds=5)
                 and all(h in parsed_set for h in block_hrefs)
                 and is_item_in_db(imdb_code)
             ):
-                print(f"[ {get_time()} ] {name} already in DB, skip block")
+                logger.debug(
+                    "Skipping cached block name=%s imdb=%s (%d links already parsed)",
+                    name,
+                    imdb_code,
+                    len(block_hrefs),
+                )
+                skipped_cached += 1
                 continue
-        except Exception:
-            pass
+        except Exception as exc:
+            logger.debug(
+                "Cache check failed for block name=%s imdb=%s: %r", name, imdb_code, exc
+            )
         seasons_link = {}
 
 
@@ -605,8 +681,11 @@ def series_links(series=None, blocks=None, fetch_episodes=True, sleep_seconds=5)
                         "link": href,
                     },
                 )
-                print(
-                    f"[ {get_time()} ] WARN no season in {href} (block {name}) -> skipped, not fatal"
+                logger.warning(
+                    "Skipping link without season: name=%s imdb=%s href=%s",
+                    name,
+                    imdb_code,
+                    href,
                 )
                 continue
             version = classify_version(href, header)
@@ -671,8 +750,13 @@ def series_links(series=None, blocks=None, fetch_episodes=True, sleep_seconds=5)
                 for href in hrefs:
                     if href in parsed_set and len(hrefs) > 1:
                         continue
-                    print(
-                        f"LINK FOR SERIE *** {name} *** WITH IMDB_CODE ### {imdb_code} ### IS => {href}"
+                    logger.info(
+                        "Fetching serie name=%s imdb=%s season=%s quality=%s url=%s",
+                        name,
+                        imdb_code,
+                        season,
+                        quality_text,
+                        href,
                     )
                     eps = fetch_season_episodes(href)
                     if eps is None:
@@ -698,8 +782,14 @@ def series_links(series=None, blocks=None, fetch_episodes=True, sleep_seconds=5)
                             fetched_href = href
                             break
                 if fetched_href is None:
-                    print(
-                        f"[ {get_time()} ] All mirrors failed for {name} {season} {quality_text}"
+                    failed_blocks += 1
+                    logger.warning(
+                        "All %d mirror(s) failed: name=%s imdb=%s season=%s quality=%s",
+                        len(hrefs),
+                        name,
+                        imdb_code,
+                        season,
+                        quality_text,
                     )
                     continue
             seasons_link[version][season][quality_text] = episodes
@@ -710,13 +800,23 @@ def series_links(series=None, blocks=None, fetch_episodes=True, sleep_seconds=5)
             ):
                 newly_parsed.append(fetched_href)
 
-        if seasons_link.get("SoftSub"):
-            print(
-                f"[ {get_time()} ] seasons(SoftSub) for {name} is {', '.join(list(seasons_link['SoftSub'].keys()))}"
-            )
-        if seasons_link.get("NoSub"):
-            print(
-                f"[ {get_time()} ] seasons(NoSub) for {name} is {', '.join(list(seasons_link['NoSub'].keys()))}"
+        for version_key in ("SoftSub", "NoSub", "Dubbed"):
+            seasons = seasons_link.get(version_key)
+            if seasons:
+                logger.debug(
+                    "Seasons(%s) for name=%s imdb=%s: %s",
+                    version_key,
+                    name,
+                    imdb_code,
+                    ", ".join(sorted(seasons.keys())),
+                )
+        if not seasons_link:
+            failed_blocks += 1
+            logger.warning(
+                "Block produced zero seasons (all fetches failed?): name=%s imdb=%s links=%d",
+                name,
+                imdb_code,
+                len(b["links"]),
             )
         data.append(
             {
@@ -729,7 +829,7 @@ def series_links(series=None, blocks=None, fetch_episodes=True, sleep_seconds=5)
             }
         )
         counter += 1
-        print(f"[ {get_time()} ] {name} serie append ({counter} until now)")
+        logger.info("Serie appended: name=%s imdb=%s (%d/%d)", name, imdb_code, counter, len(serie_blocks))
         if len(data) % 5 == 0:
             if data:
                 insert_series_data(data)
@@ -738,32 +838,49 @@ def series_links(series=None, blocks=None, fetch_episodes=True, sleep_seconds=5)
             newly_parsed = []
             data = []
             if sleep_seconds:
-                print(f"[ {get_time()} ] Sleeping {sleep_seconds}s ...")
+                logger.info("Batch done; sleeping %ss ...", sleep_seconds)
                 time.sleep(sleep_seconds)
 
     if data:
         with open("moviesssss.pkl", "wb") as f:
             try:
                 pickle.dump(data, f)
-            except Exception:
-                pass
+            except Exception as exc:
+                logger.warning("Could not write debug pickle moviesssss.pkl: %s", exc)
         insert_series_data(data)
     if newly_parsed:
         append_parsed_links("parsed_links.txt", newly_parsed)
-    print(f"[ {get_time()} ] Done series: {counter} blocks processed")
+    logger.info(
+        "Series done: processed=%d skipped_cached=%d blocks_with_failures=%d",
+        counter,
+        skipped_cached,
+        failed_blocks,
+    )
 
 
 def movies_info():
-    with open("html_code_with_a.txt", "r", encoding="UTF-8") as f:
-        soup = BeautifulSoup(f.read(), "html.parser")
+    logger.info("Movie step started")
+    try:
+        with open("html_code_with_a.txt", "r", encoding="UTF-8") as f:
+            soup = BeautifulSoup(f.read(), "html.parser")
+    except OSError as exc:
+        logger.error("Cannot read html_code_with_a.txt for movies_info: %s", exc)
+        return
     blocks = parse_archive_blocks(soup)
+    logger.debug("Parsed %d archive blocks for movies", len(blocks))
     movies_links(blocks=blocks)
 
 
 def series_info(fetch_episodes=True):
-    with open("html_code_with_a.txt", "r", encoding="UTF-8") as f:
-        soup = BeautifulSoup(f.read(), "html.parser")
+    logger.info("Serie step started (fetch_episodes=%s)", fetch_episodes)
+    try:
+        with open("html_code_with_a.txt", "r", encoding="UTF-8") as f:
+            soup = BeautifulSoup(f.read(), "html.parser")
+    except OSError as exc:
+        logger.error("Cannot read html_code_with_a.txt for series_info: %s", exc)
+        return
     blocks = parse_archive_blocks(soup)
+    logger.debug("Parsed %d archive blocks for series", len(blocks))
     series_links(blocks=blocks, fetch_episodes=fetch_episodes)
 
 
@@ -771,20 +888,27 @@ def series_info(fetch_episodes=True):
 
 if __name__ == "__main__":
     if "info" not in os.listdir():
+        logger.info("No cache info found; fetching archive for the first time")
         writing_html_code_in_file()
 
-    file = open("info", "rb")
+    try:
+        with open("info", "rb") as file:
+            last_modified = pickle.load(file)["last_modified"]
+    except (OSError, pickle.PickleError, KeyError) as exc:
+        logger.warning("Could not read cache info (%s); refetching archive", exc)
+        writing_html_code_in_file()
+        with open("info", "rb") as file:
+            last_modified = pickle.load(file)["last_modified"]
     today = datetime.date.today()
-    last_modified = pickle.load(file)["last_modified"]
-    file.close()
     if (today - last_modified).days > 1:
+        logger.info("Archive cache is stale (>1 day); refetching")
         writing_html_code_in_file()
 
-    print("\n#### MOVIE STEP START ####\n")
+    logger.info("#### MOVIE STEP START ####")
     movies_info()
-    print("\n#### MOVIE STEP END ####\n")
+    logger.info("#### MOVIE STEP END ####")
 
-    print("\n#### SERIE STEP START ####\n")
+    logger.info("#### SERIE STEP START ####")
     series_info()
-    print("\n#### SERIE STEP END ####\n")
-    print(f"[ {get_time()} ] Done :)")
+    logger.info("#### SERIE STEP END ####")
+    logger.info("Done :)")

@@ -6,3 +6,6 @@ info
 remains_data.json
 .vscode
 parsed_links.txt
+logs/
+backups/
+parsed_links.txt
