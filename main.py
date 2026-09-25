@@ -9,28 +9,30 @@ from tqdm import tqdm
 from logger_config import setup_logging
 from storage_db import find_movie_or_serie
 
-setup_logging()
+setup_logging(quiet=True)
 logger = logging.getLogger(__name__)
 
 
 # function to download file from url
-def download_file(url, filename):
-    logger.info("Download requested: url=%s file=%s", url, filename)
+def download_file(url, filename, save_dir="."):
+    logger.info("Download requested: url=%s file=%s save_dir=%s", url, filename, save_dir)
     attempt = 0
     while attempt <= 3:
         try:
+            download_path = os.path.join(save_dir, filename)
+            os.makedirs(save_dir, exist_ok=True)
             downloaded_size = 0
-            if os.path.exists(filename):
-                downloaded_size = os.path.getsize(filename)
+            if os.path.exists(download_path):
+                downloaded_size = os.path.getsize(download_path)
                 logger.info(
                     "Resuming download: file=%s already=%d bytes (attempt %d)",
-                    filename,
-                    downloaded_size,
+                    download_path,
+                      downloaded_size,
                     attempt + 1,
                 )
                 print(
                     Fore.YELLOW,
-                    f"{downloaded_size} of {filename} downloaded",
+                    f"{downloaded_size} of {download_path} downloaded",
                     Fore.RESET,
                 )
 
@@ -56,7 +58,7 @@ def download_file(url, filename):
                 total_size = int(response.headers.get("content-length", 0))
             logger.info(
                 "Downloading: file=%s total=%d bytes (attempt %d)",
-                filename,
+                download_path,
                 total_size,
                 attempt + 1,
             )
@@ -71,7 +73,7 @@ def download_file(url, filename):
                 initial=downloaded_size,
             ) as progress_bar:
                 print(Fore.GREEN)
-                with open(filename, mode) as file:
+                with open(download_path, mode) as file:
                     for data in response.iter_content(block_size):
                         file.write(data)
                         progress_bar.update(len(data))
@@ -116,11 +118,11 @@ def download_file(url, filename):
             )
             print(Fore.RED, f"Error: {str(exc)}", Fore.RESET)
         else:
-            logger.info("Download finished: file=%s url=%s", filename, url)
+            logger.info("Download finished: file=%s url=%s", download_path, url)
             print(
                 Style.BRIGHT,
                 Fore.GREEN,
-                f"{filename} downloaded successfully.",
+                f"{download_path} downloaded successfully.",
                 Style.RESET_ALL,
             )
             return True
@@ -209,6 +211,7 @@ def main():
 
             ## show all types of this movie/serie
             print(f"\n#### {data[selected]['name']} ####\n")
+            item_name = data[selected]["name"]
             data[selected].pop("name")
             ### if it's a movie show all types of this movie and ask user to select one of them
             if type_name == "m":
@@ -285,11 +288,13 @@ def main():
                                     d = input("Do you want to download this?(y/n)")
 
                                     if d.lower() == "y":
-                                        name = data[selected][movie_type][i][
+                                        file_name = data[selected][movie_type][i][
                                             "link"
                                         ].split("/")[-1]
                                         download_file(
-                                            data[selected][movie_type][i]["link"], name
+                                            data[selected][movie_type][i]["link"],
+                                            file_name,
+                                            save_dir=f"./downloads/movies/{item_name}",
                                         )
                                     else:
                                         if (
@@ -360,7 +365,7 @@ def main():
                             ### show all movies of this type and ask user to select one of them
                             movie_type = value
                             while True:
-                                logger.info("Season selection for serie=%s type=%s", data[selected].get("name"), movie_type)
+                                logger.info("Season selection for serie=%s type=%s", item_name, movie_type)
                                 print(Fore.BLUE, "Choise season: ")
                                 for i, s in enumerate(data[selected][movie_type]):
                                     print(Fore.GREEN, f"[{i}] ==>", Fore.RESET, s)
@@ -426,7 +431,7 @@ def main():
                                     if all_episodes == "y":
                                         logger.info(
                                             "Batch download: serie=%s type=%s season=%s quality=%s episodes=%d",
-                                            data[selected].get("name"),
+                                            item_name,
                                             movie_type,
                                             season,
                                             quality,
@@ -445,19 +450,20 @@ def main():
                                                 f"Start Downloading {episode} with link: {value['link']}....",
                                                 Fore.RESET,
                                             )
-                                            name = data[selected][movie_type][season][
+                                            file_name = data[selected][movie_type][season][
                                                 quality
                                             ][episode]["link"].split("/")[-1]
                                             if not download_file(
                                                 data[selected][movie_type][season][
                                                     quality
                                                 ][episode]["link"],
-                                                name,
+                                                file_name,
+                                                save_dir=f"./downloads/series/{item_name}/{season}",
                                             ):
                                                 logger.error(
                                                     "Failed to download episode %s for serie=%s",
                                                     episode,
-                                                    data[selected].get("name"),
+                                                    item_name,
                                                 )
                                                 print(
                                                     Fore.RED,
@@ -516,14 +522,15 @@ def main():
                                         d = input("Do you want to download this?(y/n)")
 
                                         if d.lower() == "y":
-                                            name = data[selected][movie_type][season][
+                                            file_name = data[selected][movie_type][season][
                                                 quality
                                             ][episode]["link"].split("/")[-1]
                                             download_file(
                                                 data[selected][movie_type][season][
                                                     quality
                                                 ][episode]["link"],
-                                                name,
+                                                file_name,
+                                                save_dir=f"./downloads/series/{item_name}/{season}",
                                             )
                                         else:
                                             if (

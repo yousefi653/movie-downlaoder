@@ -14,7 +14,7 @@ DATE_FORMAT = "%H:%M:%S"
 _QUIET_LOGGERS = ("pymongo", "urllib3", "requests", "simple_useragent.core", "simple_header.core")
 
 
-def setup_logging(level=None, log_file="logs/app.log"):
+def setup_logging(level=None, log_file="logs/app.log", quiet=False):
     global _CONFIGURED
     if _CONFIGURED:
         return
@@ -31,7 +31,7 @@ def setup_logging(level=None, log_file="logs/app.log"):
     root.handlers.clear()
 
     console = logging.StreamHandler(sys.stdout)
-    console.setLevel(numeric_level)
+    console.setLevel(logging.CRITICAL if quiet else numeric_level)
     console.setFormatter(logging.Formatter(CONSOLE_FORMAT, datefmt=DATE_FORMAT))
     root.addHandler(console)
 

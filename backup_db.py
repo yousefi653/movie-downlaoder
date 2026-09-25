@@ -12,7 +12,6 @@ from pymongo import MongoClient, errors
 from logger_config import setup_logging
 from storage_db import DB_NAME, MONGO_URI
 
-setup_logging()
 logger = logging.getLogger(__name__)
 
 DEFAULT_BACKUP_DIR = Path("backups")
@@ -371,4 +370,5 @@ def main():
 
 
 if __name__ == "__main__":
+    setup_logging()
     main()

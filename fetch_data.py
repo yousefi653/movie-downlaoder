@@ -16,7 +16,6 @@ from bs4 import BeautifulSoup
 from logger_config import setup_logging
 from storage_db import insert_movies_data, insert_series_data, is_item_in_db
 
-setup_logging()
 logger = logging.getLogger(__name__)
 
 urllib3.disable_warnings()
@@ -887,6 +886,7 @@ def series_info(fetch_episodes=True):
 # main program
 
 if __name__ == "__main__":
+    setup_logging()
     if "info" not in os.listdir():
         logger.info("No cache info found; fetching archive for the first time")
         writing_html_code_in_file()
