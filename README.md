@@ -1,109 +1,70 @@
-# Movie Downloader - DonyayeSerial Downloader
+# Movie and Series Downloader
 
-A Python-based downloader for movies and TV series from DonyayeSerial archive.
+A Python command-line application for browsing and downloading movies and TV series from the DonyayeSerial archive.
 
 ## Features
 
-- **Browse and search** movies and series by name
-- **Multiple quality options**: SoftSub, Dubbed, NoSub
-- **Serie episode selection**: Choose specific seasons and qualities
-- **Resume downloads**: Automatically resume interrupted downloads
-- **Organized file saving**:
-  - Movies: `./downloads/movies/movie-name/filename`
-  - Series: `./downloads/series/serie-name/season/filename`
-- **Colorful terminal output** with progress bars
-- **Logger configuration**: Outputs to both console and `logs/app.log`
-
-## Prerequisites
-
-- Python 3.8+
-- MongoDB running at `127.0.0.1:27017` (for database storage)
+- Search movies and series by name
+- Choose between available subtitle and audio options
+- Select seasons and individual episodes
+- Resume interrupted downloads
+- Organize downloaded files into movie and series directories
+- Display download progress in the terminal
+- Log application activity to the console and a log file
 
 ## Requirements
 
-The required Python packages are listed in `requirements.txt`. Install them using:
+- Python 3.8 or newer
+- MongoDB running locally at `127.0.0.1:27017`
+- Python dependencies listed in `requirements.txt`
+
+## Installation
+
+Clone the repository:
+
+```bash
+git clone https://github.com/yousefi653/movie-downlaoder.git
+cd movie-downlaoder
+```
+
+Install dependencies:
 
 ```bash
 pip install -r requirements.txt
 ```
 
-Or install individually:
+Make sure MongoDB is running, then start the application:
 
 ```bash
-pip install beautifulsoup4 bs4 certifi charset-normalizer colorama dnspython filelock idna platformdirs pymongo requests requests-file simple-header simple-useragent soupsieve tldextract tqdm typing_extensions ua-parser ua-parser-builtins urllib3 validators
+python main.py
 ```
-
-## Project Structure
-
-```
-main.py              # Main interactive application
-fetch_data.py        # Data fetching and parsing
-storage_db.py        # MongoDB storage operations
-logger_config.py     # Logging configuration
-html_code.txt        # Cached HTML archive
-html_code_with_a.txt # Prettified HTML archive
-info                 # Cache modification date (pickle)
-logs/                # Log directory
-backups/             # Backup directory
-downloads/           # Downloaded files directory
-  ├── movies/        # Movie downloads
-  └── series/        # Series downloads
-parsed_links.txt     # Already parsed links cache
-remains_data.json    # Failed download records
-README.md            # This file
-```
-
-## Quick Start
-
-1. **Clone the repository**
-2. **Install dependencies**:
-   ```bash
-   pip install requests colorama tqdm pymongo bs4 simple-header urllib3
-   ```
-3. **Ensure MongoDB is running** at the default connection
-4. **Run the application**:
-   ```bash
-   python main.py
-   ```
 
 ## Usage
 
-When you run `main.py`:
+After starting the application:
 
-1. **Select media type**: Enter `m` for movie or `s` for serie
-2. **Enter search name**: The name you want to search for
-3. **Select from results**: Choose the desired movie/serie from the list
-4. **For movies**: Select quality type (SoftSub, Dubbed, NoSub) then choose the specific file
-5. **For series**: 
-   - Select quality type
-   - Choose season
-   - Choose quality for that season
-   - Download all episodes from a season or select individual episodes
+1. Choose whether to search for a movie or a series.
+2. Enter a title to search.
+3. Select an item from the search results.
+4. Choose the available quality or audio/subtitle option.
+5. For a series, select a season and then choose whether to download all episodes or specific episodes.
 
-## File Organization
+## Download Organization
 
-### Movies
-Downloaded files are saved to:
-```
-./downloads/movies/{movie-name}/{filename}
-```
+Downloaded files are organized under the `downloads/` directory:
 
-### Series
-Downloaded files are saved to:
-```
-./downloads/series/{serie-name}/{season}/{filename}
+```text
+downloads/
+├── movies/
+└── series/
+    └── <series-name>/
+        └── <season>/
 ```
 
 ## Logging
 
-- Console output can be suppressed by setting `quiet=True` in `setup_logging()`
-- All logs are written to `logs/app.log`
-- Log level can be configured via `LOG_LEVEL` environment variable
+Application logs are written to `logs/app.log` as well as displayed in the terminal.
 
-## Contributing
+## Important
 
-Pull requests are welcome. For major changes, please open an issue first to discuss what you'd like to change.
-
-## License
-
-MIT
+This project is intended for learning and personal use. Make sure you have the right to access and download any content you use it with, and follow the source website's terms.
